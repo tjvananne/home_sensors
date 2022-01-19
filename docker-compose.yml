@@ -1,0 +1,28 @@
+version: "3.4"
+services:
+  
+  flask:
+    build:
+      context: .
+      dockerfile: Flask.dockerfile
+    ports:
+      - 5000:5000
+    network_mode: host
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Celery.dockerfile
+    network_mode: host
+    environment:
+      rabbitmq_uri: amqp://127.0.0.1:5672
+      # rabbitmq_uri: amqp://rabbitmq_server:5672
+    depends_on:
+      - rabbitmq_server
+
+  rabbitmq_server:
+    # build:
+    image: rabbitmq:3.9.12
+      # "expose" only exposes ports to linked services. Not the host.
+    ports:
+      - 5672:5672

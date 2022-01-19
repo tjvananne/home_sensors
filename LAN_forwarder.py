@@ -10,10 +10,11 @@ import logging
 import json
 from datetime import datetime
 from dateutil import tz
+from tasks import load_sensor
 
 # Config:
 
-MEASUREMENTS = ['temperature', 'humidity', 'pressure']
+MEASUREMENTS = ['temperature', 'humidity', 'pressure', 'lastCheckin']
 
 logging.basicConfig(
     filename="LAN_forwarder.log", 
@@ -48,6 +49,12 @@ def all_valid(*args):
     #Example:
         print(all_valid(1, 3, 0, ''))  # True
         print(all_valid(1, None, 9))   # False
+    
+    # why not use `all()`?
+    >>> all([True, True, 0])
+    False
+    # ^ That's why.
+    # Still not sure if there's a better way though.
     """
 
     for arg in args:
@@ -62,12 +69,22 @@ def all_valid(*args):
 
 app = Flask(__name__)
 
+@app.route("/hello", methods=['GET'])
+def hello():
+    print("I ran the 'hello' route!")
+    return '<p>Hello, World!</p>'
+
+
 @app.route("/sensor", methods=['POST'])
 def receive_sensor_data():
+
 
     # extract JSON into dict    
     content_raw = request.json
     content = content_raw.get('content')
+    print("\n\n------------")
+    print("printing content!")
+    print(content)
 
     # stop if JSON is not formatted according to our assumptions
     if not content:
@@ -82,23 +99,42 @@ def receive_sensor_data():
     unit = content.get("unit")
     deviceId = content.get("deviceId")
 
-    # stop if JSON is not formatted according to our assumptions
-    if not all_valid(displayName, name, value, unit, deviceId):
+    # quick patch for "lastCheckin" units (so we actually record those...)
+    if name == "lastCheckin":
+        unit = "timestamp" 
+
+    if not name:
         raw_json_string = json.dumps(content)
-        logging.warning(f"Improper JSON format: {raw_json_string}")
-        return '200'
+        logging.warning(f"No 'name' field in JSON payload: {raw_json_string}")
 
     # filter to only the measurements we're interested in
     if not name in MEASUREMENTS:
         raw_json_string = json.dumps(content)
         logging.info(f"Not a measurement we're interested in: {raw_json_string}")
         return '200'
+    
+    # stop if JSON is not formatted according to our assumptions
+    if not all_valid(displayName, name, value, unit, deviceId):
+        raw_json_string = json.dumps(content)
+        logging.warning(f"Improper JSON format: {raw_json_string}")
+        return '200'
+
+    # preprocess sensor data
+    del content['descriptionText']
+    del content['type']
+    del content['data']
+    utc_ts, mtn_ts, mtn_date, mtn_time = make_time_fields()
+    content['utc_LAN_received'] = utc_ts
+    content['utc_cloud_insertion'] = utc_ts
+    content['mtn_date'] = mtn_date
+    content['mtn_time'] = mtn_time
 
 
-
+    # load sensor data
+    print("calling load_sensor.delay(content)...")
+    load_sensor.delay(content)
+    print("done.")
     return '200'
-
-
 
 
 
@@ -107,5 +143,7 @@ if __name__ == "__main__":
     # Note, this is for testing only...
     # In prod, use gunicorn like so:
     # gunicorn --bind 0.0.0.0:5000 LAN_forwarder:app
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
+
+
 
