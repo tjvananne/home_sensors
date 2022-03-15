@@ -1,0 +1,1 @@
+export const myvar = "value_of_myvar_as_string"
