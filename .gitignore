@@ -12,4 +12,8 @@ concepts/*
 celerybeat*
 
 # nothing cached
-__pycache__/*
+__pycache__
+
+venv
+
+data

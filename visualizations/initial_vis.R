@@ -66,5 +66,7 @@ plotly::ggplotly(gg)
 # I had only turned it up to 70, but hogwarts last reading as of 4:11PM is 73.6
 
 
+dftemp %>% head()
+
 
 

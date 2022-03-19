@@ -80,7 +80,8 @@ The answer here was the network mode I was using as well as the rabbitmq_uri env
 
 ## Next steps
 
-1. 
+1. Celery task worker to pull weather api data and write raw json data to staging table of postgres on LAN server
+2. Same worker parses the JSON and sends parsed/clean data to weather table on LAN server as well as cloud server
 
 
 ## Dev environment startup
