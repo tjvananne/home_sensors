@@ -1,18 +1,12 @@
-
-# I need to:
-# 1) receive JSON from hubitat
-# 2) filter / process that JSON according to what I'm interested in
-# 3) push that cleaned JSON into the cloud (cache locally if cloud destination is not available)
-
-
 from flask import Flask, request
 import logging
 import json
-from datetime import datetime
-from dateutil import tz
 from tasks import load_sensor
+from utils import all_valid, make_time_fields
 
-# Config:
+
+# ==== Config ====
+
 
 MEASUREMENTS = ['temperature', 'humidity', 'pressure', 'lastCheckin']
 
@@ -23,61 +17,22 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S')
 
 
-# UDFs:
+# ==== Flask App ====
 
-def make_time_fields():
-
-    # make datetime timestamps
-    utc = datetime.now(tz.UTC)
-    mtn = utc.astimezone(tz.gettz('America/Chihuahua'))
-
-    # create desired strings - all derived from the same original timestamp
-    utc_ts = str(utc)[0:26]         # remove timezone info
-    mtn_ts = str(mtn)[0:26]
-    mtn_date = str(mtn.date())      # ISO 8601 YYYY-MM-DD
-    mtn_time = str(mtn.time())[0:8] # I only want HH:MM:SS, no milli or micro seconds
-
-    return utc_ts, mtn_ts, mtn_date, mtn_time
-
-
-def all_valid(*args):
-    """
-    Are any of these args None? I want to accept
-    empty strings and integer values of zero as
-    valid values.
-
-    #Example:
-        print(all_valid(1, 3, 0, ''))  # True
-        print(all_valid(1, None, 9))   # False
-    
-    # why not use `all()`?
-    >>> all([True, True, 0])
-    False
-    # ^ That's why.
-    # Still not sure if there's a better way though.
-    """
-
-    for arg in args:
-        if arg is None:
-            return False
-    
-    return True
-
-
-
-# Flask App:
 
 app = Flask(__name__)
 
 @app.route("/hello", methods=['GET'])
 def hello():
+    """
+    hello world route for interactively ensuring docker compose is up.
+    """
     print("I ran the 'hello' route!")
     return '<p>Hello, World!</p>'
 
 
 @app.route("/sensor", methods=['POST'])
 def receive_sensor_data():
-
 
     # extract JSON into dict    
     content_raw = request.json
@@ -129,13 +84,11 @@ def receive_sensor_data():
     content['mtn_date'] = mtn_date
     content['mtn_time'] = mtn_time
 
-
     # load sensor data
     print("calling load_sensor.delay(content)...")
     load_sensor.delay(content)
     print("done.")
     return '200'
-
 
 
 if __name__ == "__main__":
@@ -144,6 +97,3 @@ if __name__ == "__main__":
     # In prod, use gunicorn like so:
     # gunicorn --bind 0.0.0.0:5000 LAN_forwarder:app
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-
-

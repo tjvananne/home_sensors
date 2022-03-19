@@ -3,11 +3,14 @@ My personal project for collecting, processing, storing the sensor data I'm coll
 
 - [celery/dockercompose/sqlalchemy](https://stackoverflow.com/questions/55766653/docker-compose-bind-celery-to-postgres-database)
 
-## Bookmark:
 
-* I'm trying to figure out how to get secrets into my celery workers... 
-  - It looks like I'm not able to read them from my secrets.json file
-  - It does look like it works if I use environment variables from host machine, but not sure what this would look like in docker-compose...
+## Tasks
+
+- Loading hubitat temp data into databases:
+  - `load_sensor()` celery task
+  - hubitat is configured to send data to my LAN server's `/sensor` flask route which calls `receive_sensor_data()`
+- Pull / load public weather data:
+  - Won't have anything to do with flask, just a timed (periodic) celery task
 
 
 ## Docker notes
@@ -29,6 +32,7 @@ Set up celery docker container:
 
 **Docker Compose Notes**:
 
+* To check if your docker compose is running, you run `sudo docker-compose ps`. But **you have to be in the directory where your `docker-compose.yml` file is**.
 * [this is a great resource](https://blog.deepjyoti30.dev/celery_compose) about configuring celery and rabbitmq
 
 ```yaml

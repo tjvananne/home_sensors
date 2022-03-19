@@ -5,4 +5,4 @@ COPY requirements.txt requirements.txt
 COPY secrets.json secrets.json
 COPY utils.py utils.py
 RUN pip install -r requirements.txt
-CMD ["celery", "-A", "my_celery_app", "worker", "--pool=eventlet", "--loglevel=INFO"]
+CMD ["celery", "-A", "my_celery_app", "beat", "--loglevel=INFO"]
