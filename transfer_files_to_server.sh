@@ -1,0 +1,1 @@
+scp Celery.dockerfile Flask.dockerfile CeleryBeat.dockerfile docker-compose.yml LAN_forwarder.py my_celery_app.py requirements.txt secrets.json tasks.py utils.py taylor@10.0.0.10:~/home_sensors/

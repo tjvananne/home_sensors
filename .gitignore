@@ -8,12 +8,12 @@ concepts/*
 # log files
 *.log
 
-# any file related to celerybeat
-celerybeat*
 
 # nothing cached
 __pycache__
 
 venv
 
+# analysis
 data
+notebooks

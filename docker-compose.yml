@@ -20,6 +20,15 @@ services:
     depends_on:
       - rabbitmq_server
 
+  celery_beat:
+    build:
+      context: .
+      dockerfile: CeleryBeat.dockerfile
+    network_mode: host
+    depends_on:
+      - rabbitmq_server
+      - celery_worker
+
   rabbitmq_server:
     # build:
     image: rabbitmq:3.9.12
