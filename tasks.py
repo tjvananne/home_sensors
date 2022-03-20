@@ -10,21 +10,119 @@ from utils import make_time_fields
 # https://stackoverflow.com/questions/14526249/celery-worker-database-connection-pooling
 
 # TODO: do the sqlalchemy connections in my @worker_init.connect function need to be global?
+#       >>> yes.
 
 @app.task
 def get_and_load_weather_data() -> str:
     """
-    Requests data from a weather API, stores that into the database.
+    Requests data from a weather API, stores the raw JSON in my LAN database. It will then
+    attempt to parse only the fields I care about and pass those up to the cloud database.
     """
     
+    print("=" * 50, "calling get_and_load_weather_data()", "=" * 50)
+
     # TODO: let's just see if we can get this up and running before setting up database schema and all that
     resp = requests.get(f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={apikey}&units=imperial")
+    json_str = resp.text
 
-    this_timestamp = re.sub('[- :\.]', '_', make_time_fields()[1])
-    weather_data = json.loads(resp.text)  
-    print("=" * 30, "weather data test", "=" * 30)  
-    print(this_timestamp)    
-    print(json.dumps(weather_data, indent=2))
+    utc_ts, mtn_ts, mtn_date, mtn_time = make_time_fields()
+
+    data_dict = {
+        "weather_json_raw": json_str,
+        "weather_jsonb": json_str,
+        "utc_ts": utc_ts,
+        "mtn_date": mtn_date,
+        "mtn_time": mtn_time
+    }
+
+    with eng_local.begin() as conn:
+        conn.execute(
+            text("""INSERT INTO boulder.weather_raw (
+                        weather_json_raw, weather_jsonb,  
+                        utc_ts, mtn_date, mtn_time
+                    ) 
+                    VALUES (
+                        :weather_json_raw, :weather_jsonb,  
+                        :utc_ts, :mtn_date, :mtn_time
+                    )"""), 
+                    data_dict
+        )
+    
+    data = json.loads(json_str)
+
+    try:
+        data_dict = {
+            "id": data["id"]   
+            ,"lon": data["coord"]["lon"]
+            ,"lat": data["coord"]["lat"]
+            ,"weather_desc": data["weather"][0]["main"]
+            ,"temp": data["main"]["temp"]
+            ,"temp_feels_like": data["main"]["feels_like"]
+            ,"temp_min": data["main"]["temp_min"]
+            ,"temp_max": data["main"]["temp_max"]
+            ,"pressure": data["main"]["pressure"]
+            ,"humidity": data["main"]["humidity"]
+            ,"visibility": data["visibility"]
+            ,"wind_speed": data["wind"]["speed"]
+            ,"wind_deg": data["wind"]["deg"]
+            ,"clouds_all": data["clouds"]["all"]
+            ,"dt": data["dt"]
+            ,"dt_sunrise": data["sys"]["sunrise"]
+            ,"dt_sunset": data["sys"]["sunset"]
+            ,"timezone": data["timezone"]
+        }
+    except KeyError:
+        print("Couldn't parse the key in the weather data")
+
+    with eng_local.begin() as conn:
+        conn.execute(
+            text("""INSERT INTO boulder.weather VALUES (
+                        :id, 
+                        :lon,
+                        :lat,
+                        :weather_desc,
+                        :temp,
+                        :temp_feels_like,
+                        :temp_min,
+                        :temp_max,
+                        :pressure,
+                        :humidity,
+                        :visibility,
+                        :wind_speed,
+                        :wind_deg,
+                        :clouds_all,
+                        :dt,
+                        :dt_sunrise,
+                        :dt_sunset,
+                        :timezone
+                    )"""), 
+                    data_dict
+        )
+
+    with eng_cloud.begin() as conn:
+        conn.execute(
+            text("""INSERT INTO boulder.weather VALUES (
+                        :id, 
+                        :lon,
+                        :lat,
+                        :weather_desc,
+                        :temp,
+                        :temp_feels_like,
+                        :temp_min,
+                        :temp_max,
+                        :pressure,
+                        :humidity,
+                        :visibility,
+                        :wind_speed,
+                        :wind_deg,
+                        :clouds_all,
+                        :dt,
+                        :dt_sunrise,
+                        :dt_sunset,
+                        :timezone
+                    )"""), 
+                    data_dict
+        )
 
 
 @app.task

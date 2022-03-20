@@ -8,7 +8,7 @@ from utils import all_valid, make_time_fields
 # ==== Config ====
 
 
-MEASUREMENTS = ['temperature', 'humidity', 'pressure', 'lastCheckin']
+MEASUREMENTS = ['temperature', 'humidity', 'pressure'] #, 'lastCheckin']
 
 logging.basicConfig(
     filename="LAN_forwarder.log", 

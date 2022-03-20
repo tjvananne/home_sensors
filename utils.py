@@ -6,7 +6,7 @@ def make_time_fields():
 
     # make datetime timestamps
     utc = datetime.now(tz.UTC)
-    mtn = utc.astimezone(tz.gettz('America/Chihuahua'))
+    mtn = utc.astimezone(tz.gettz('America/Boise'))
 
     # create desired strings - all derived from the same original timestamp
     utc_ts = str(utc)[0:26]         # remove timezone info
