@@ -66,6 +66,9 @@ def get_and_load_weather_data() -> str:
             ,"wind_speed": data["wind"]["speed"]
             ,"wind_deg": data["wind"]["deg"]
             ,"clouds_all": data["clouds"]["all"]
+            ,"utc_ts": str(utc_ts)
+            ,"mtn_date": mtn_date
+            ,"mtn_time": mtn_time
             ,"dt": data["dt"]
             ,"dt_sunrise": data["sys"]["sunrise"]
             ,"dt_sunset": data["sys"]["sunset"]
@@ -91,6 +94,9 @@ def get_and_load_weather_data() -> str:
                         :wind_speed,
                         :wind_deg,
                         :clouds_all,
+                        :utc_ts,
+                        :mtn_date,
+                        :mtn_time,
                         :dt,
                         :dt_sunrise,
                         :dt_sunset,
@@ -116,6 +122,9 @@ def get_and_load_weather_data() -> str:
                         :wind_speed,
                         :wind_deg,
                         :clouds_all,
+                        :utc_ts,
+                        :mtn_date,
+                        :mtn_time,
                         :dt,
                         :dt_sunrise,
                         :dt_sunset,
